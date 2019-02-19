@@ -9,25 +9,26 @@ using namespace std;
 // Реализуйте шаблон класса Paginator
 
 template <typename Iterator>
-struct IteratorRange {
-	Iterator begin, end;
-
-	IteratorRange(Iterator begin_, Iterator end_) 
-		: begin(begin_)
-		, end(end_) {}
+class IteratorRange {
+public:
+	IteratorRange(Iterator begin_, Iterator end_)
+		: _begin(begin_)
+		, _end(end_) {}
 
 	Iterator begin() {
-		return begin;
+		return _begin;
 	}
 
 	Iterator end() {
-		return end;
+		return _end;
 	}
 
 	size_t size() const {
-		return end - begin;
+		return _end - _begin;
 	}
-}
+private:
+	Iterator _begin, _end;
+};
 
 template <typename Iterator>
 class Paginator {
