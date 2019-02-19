@@ -13,7 +13,7 @@ struct IteratorRange {
 	Iterator begin, end;
 
 	IteratorRange(Iterator begin_, Iterator end_) 
-		: begin(bigib_)
+		: begin(begin_)
 		, end(end_) {}
 
 	Iterator begin() {
@@ -33,7 +33,9 @@ template <typename Iterator>
 class Paginator {
 public:
 	Paginator(Iterator begin, Iterator end, size_t page_size) {
-
+		size_t size_range = rnd - begin;
+		IteratorRange<Iterator> ir(begin, next(begin, min(page_size, size_range)));
+		pages_rahge.push_back();
 	}
 
 	Iterator begin() {
