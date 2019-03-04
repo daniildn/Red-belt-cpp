@@ -60,8 +60,7 @@ Stats ExploreKeyWords(const set<string>& key_words, istream& input) {
 		futures.push_back(async(ExploreKeyWordsSingleThread, ref(key_words), ref(ss)));
 	}
 	string in;
-	string line;
-	for (int i = 0; i < 10000; ++i) {
+	for (string line; getline(input, line);) {
 		in += line;
 	}
 	istringstream ss(in);
