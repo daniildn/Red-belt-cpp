@@ -13,27 +13,37 @@ using namespace std;
 
 template<typename T>
 struct Item {
+	T data;
 	int priority;
-	//typename list<T>::iterator key;
-	typename list<pair<int, T>>::iterator key;
+	int order;
 };
+
+template<typename T>
+struct Element {
+	int priority;
+	int order;
+	typename list<Item<T>>::iterator iterator;
+};
+
+template<typename T>
+bool operator<(const Element<T>& lhs, const Element<T>& rhs) {
+	return tie(lhs.priority, lhs.order) < tie(rhs.priority, rhs.order);
+}
 
 template<typename T>
 class PriorityCollection {
 public:
-	using Id = Item<T>; /* тип, используемый для идентификаторов */
-
-	PriorityCollection()
-		: collection(vector<list<pair<int, T>>>(1000000)) {}
+	using Id = typename list<Item<T>>::iterator; /* тип, используемый для идентификаторов */
 
 	// Добавить объект с нулевым приоритетом
 	// с помощью перемещения и вернуть его идентификатор
 	Id Add(T object) {
-//		list<T>& list = collection[0];
-//		return {0, list.insert(list.end(), move(object))};
+		Id id = collection.insert(collection.end(), {move(object), 0, order});
+
+		set_elements.insert({0, order, id});
+
 		++order;
-		list<pair<int, T>>& list = collection[0];
-		return {0, list.insert(list.end(), {order, move(object)})};
+		return id;
 	}
 
 	// Добавить все элементы диапазона [range_begin, range_end)
@@ -42,55 +52,61 @@ public:
 	template<typename ObjInputIt, typename IdOutputIt>
 	void Add(ObjInputIt range_begin, ObjInputIt range_end, IdOutputIt ids_begin) {
 		for ( ; range_begin != range_end; ++range_begin, ++ids_begin) {
-			*ids_begin = Add(*range_begin);
+			*ids_begin = Add(move(*range_begin));
 		}
 	}
 
 	// Определить, принадлежит ли идентификатор какому-либо
 	// хранящемуся в контейнере объекту
 	bool IsValid(Id id) const {
-		const list<pair<int, T>>& list = collection[id.priority];
-		return find(list.begin(), list.end(), *id.key) != list.end();
+		return set_elements.lower_bound({id->priority, id->order, id}) != set_elements.end();
 	}
 
 	// Получить объект по идентификатору
 	const T& Get(Id id) const {
-		return id.key->second;
+		return id->data;
 	}
 
 	// Увеличить приоритет объекта на 1
 	void Promote(Id id) {
-		T object = move(id.key->second);
+		auto it = set_elements.lower_bound({id->priority, id->order, id});
+//		auto it = find_if(set_elements.begin(), set_elements.end(),
+//				[id](const auto& elem) { return id == elem.iterator;});
 
-		collection[id.priority].erase(id.key);
+		set_elements.insert({it->priority + 1, it->order, id});
+		set_elements.erase(it);
 
-		++id.priority;
-		list<pair<int, T>>& list = collection[id.priority];
-		id.key = list.insert(list.end(), {id.key->first, move(object)});
-		list.sort();
-
-		if (id.priority > max_priority) {
-			max_priority = id.priority;
-		}
+		++id->priority;
 	}
 
 	// Получить объект с максимальным приоритетом и его приоритет
 	pair<const T&, int> GetMax() const {
-		return {collection[max_priority].back(), max_priority};
+		Element<T> elem = *set_elements.rbegin();
+		const T& data = elem.iterator->data;
+		return {data, elem.priority};
 	}
 
 	// Аналогично GetMax, но удаляет элемент из контейнера
 	pair<T, int> PopMax() {
-		T object = move(collection[max_priority].back().second);
-		collection[max_priority].pop_back();
-		return {move(object), max_priority};
+		Element<T> elem = *set_elements.rbegin();
+		int priority = elem.priority;
+		auto iterator = elem.iterator;
+
+		pair<T, int> result = {move(iterator->data), priority};
+
+		set_elements.erase(prev(set_elements.end()));
+		collection.erase(iterator);
+
+		return result;
 	}
 
 private:
 	// Приватные поля и методы
 
+	set<Element<T>> set_elements;
+
 	//vector<list<T>> collection;
-	vector<list<pair<int, T>>> collection;
+	list<Item<T>> collection;
 	int order = 0;
 	int max_priority = 0;
 };
@@ -110,6 +126,7 @@ void TestNoCopy() {
 	const auto yellow_id = strings.Add("yellow");
 	const auto red_id = strings.Add("red");
 
+	//cout << strings.Get(white_id) << endl;
 	strings.Promote(yellow_id);
 	for (int i = 0; i < 2; ++i) {
 		strings.Promote(red_id);
@@ -135,5 +152,14 @@ void TestNoCopy() {
 int main() {
 	TestRunner tr;
 	RUN_TEST(tr, TestNoCopy);
+
+//	PriorityCollection<string> strings;
+//	const auto id = strings.Add("123");
+//	cout << strings.IsValid(id) << endl;
+//	cout << strings.GetMax().first << ' ' << strings.GetMax().second << endl;
+//	auto r = strings.PopMax();
+//	cout << r.first << ' ' << r.second << endl;
+//	cout << strings.IsValid(id) << endl;
+
 	return 0;
 }
